@@ -379,10 +379,10 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
 
     p.push();
     p.fill(0, 0, 0, textAlpha * 0.3);
-    p.text("¡Para el amor de mi vida!", p.width / 2 + 2, p.height / 2 + 2 - (p.width * 0.04));
+    p.text("¡Te amo!", p.width / 2 + 2, p.height / 2 + 2 - (p.width * 0.04));
     p.pop();
     p.fill(50, 50, 50, textAlpha);
-    p.text("¡Para el amor de mi vida!", p.width / 2, p.height / 2 - (p.width * 0.04));
+    p.text("¡Te amo!", p.width / 2, p.height / 2 - (p.width * 0.04));
 
     p.textSize(p.width * 0.03);
     p.fill(70, 70, 70, textAlpha);
@@ -390,6 +390,10 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
 
     p.textSize(p.width * 0.02);
     p.fill(100, 100, 100, textAlpha * 0.8);
-    p.text("Mueve el ratón para ver la magia...", p.width / 2, p.height / 2 + (p.width * 0.01) + (p.width * 0.05));
+    p.text("Mueve el dedo o ratón para ver la magia...", p.width / 2, p.height / 2 + (p.width * 0.01) + (p.width * 0.05));
+
+    p.textSize(p.width * 0.02);
+    p.fill(100, 100, 100, textAlpha * 0.8);
+    p.text("Para mi SpaceCowgirl;)", p.width / 2, p.height / 6 + (p.width * 0.01) + (p.width * 0.05));
   }
 }
