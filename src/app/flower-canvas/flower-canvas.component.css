@@ -1,0 +1,14 @@
+:host {
+  display: flex; /* Usa flexbox para centrar */
+  justify-content: center; /* Centra horizontalmente */
+  align-items: center; /* Centra verticalmente */
+  min-height: 100vh; /* Ocupa al menos el 100% del alto de la ventana */
+  background-color: #f0f8ff; /* Un color de fondo suave para la página */
+}
+
+div {
+  border: 2px solid #ccc; /* Borde para ver el canvas */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
+  border-radius: 8px; /* Bordes redondeados */
+  overflow: hidden; /* Asegura que el canvas no se desborde */
+}
