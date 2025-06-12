@@ -15,8 +15,8 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
   private p5Instance: p5 | undefined;
   private flowers: any[] = [];
   private maxFlowers: number = 150;
-  private animationDuration: number = 420;
-  private messageDelay: number = 300;
+  private animationDuration: number = 420; // Flores terminan de aparecer en 7 segundos
+  private messageDelay: number = 300;     // Mensaje empieza a aparecer a los 5 segundos
   private currentFrame: number = 0;
 
   private animationFinished: boolean = false;
@@ -27,7 +27,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
   private animationPaused: boolean = true; // Empieza pausada
   private showOrientationMessage: boolean = false;
   private isMobile: boolean = false;
-  private hasInteracted: boolean = false; // Para saber si el usuario ya tocó la pantalla
+  private hasInteracted: boolean = false; // CORRECCIÓN: 'boolean = boolean = false;' se cambió a 'boolean = false;'
   // --- FIN NUEVAS VARIABLES DE ESTADO ---
 
 
@@ -47,12 +47,13 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     p.setup = () => {
       const canvas = p.createCanvas(p.windowWidth * 0.8, p.windowHeight * 0.8);
       canvas.parent(this.canvasRef.nativeElement);
-      p.background(210, 180, 230);
+      p.background(210, 180, 230); // Fondo Malva Sutil
       p.angleMode(p.DEGREES);
       p.ellipseMode(p.RADIUS);
 
       // --- Detección inicial de dispositivo y orientación ---
-      this.isMobile = p.width < 600 || p.height < 600; // Heurística simple para detectar móvil
+      // Heurística simple para detectar móvil. p.width es el ancho del canvas.
+      this.isMobile = p.width < 600 || p.height < 600;
       this.checkOrientation(p);
       // --- FIN Detección inicial ---
     };
@@ -71,7 +72,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
 
       if (!this.animationFinished) {
         if (this.flowers.length < this.maxFlowers) {
-          if (p.frameCount % 1 === 0) {
+          if (p.frameCount % 1 === 0) { // Añade una nueva flor en cada frame
             this.generateRandomFlower(p);
           }
         } else {
@@ -81,6 +82,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
         }
       }
 
+      // Dibuja y anima cada flor existente
       for (let i = 0; i < this.flowers.length; i++) {
         const flower = this.flowers[i];
         p.push();
@@ -90,6 +92,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
         let appearScale = p.constrain(p.map(this.currentFrame, flower.birthFrame, flower.birthFrame + 90, 0, 1), 0, 1);
         p.scale(appearScale);
 
+        // Interactividad: hacer que las flores giren más rápido cerca del ratón/dedo
         if (p.mouseX > 0 && p.mouseX < p.width && p.mouseY > 0 && p.mouseY < p.height) {
           let distance = p.dist(flower.x, flower.y, p.mouseX, p.mouseY);
           if (distance < 100) {
@@ -105,17 +108,20 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
         p.pop();
       }
 
+      // Filtra los pétalos que han muerto (su vida es <= 0)
       this.petals = this.petals.filter(petal => petal.life > 0);
 
+      // Dibuja los pétalos generados por el ratón/dedo
       for (let i = 0; i < this.petals.length; i++) {
         const petal = this.petals[i];
         p.push();
         p.translate(petal.x, petal.y);
-        p.rotate(petal.rotation + p.frameCount * petal.rotationSpeed);
+        p.rotate(petal.rotation + p.frameCount * petal.rotationSpeed); // Anima los pétalos un poco
         p.scale(petal.scale);
 
-        petal.life -= 1;
-        petal.alpha = p.map(petal.life, 0, petal.initialLife, 0, 255);
+        // Actualiza la vida y la transparencia del pétalo
+        petal.life -= 1; // Disminuye la vida en cada frame
+        petal.alpha = p.map(petal.life, 0, petal.initialLife, 0, 255); // Mapea la vida a la transparencia
 
         if (petal.type === 'daisy') {
           this.drawDaisyPetal(p, petal.size, petal.color.r, petal.color.g, petal.color.b, petal.alpha);
@@ -125,6 +131,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
         p.pop();
       }
 
+      // Lógica para mostrar el mensaje principal
       if (this.currentFrame > this.messageDelay && this.animationFinished && !this.messageShown) {
         this.messageShown = true;
       }
@@ -136,84 +143,89 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
 
     // --- Eventos para interacción y orientación ---
     p.mouseMoved = () => {
+      // Solo genera pétalos si la animación NO está pausada y el ratón está dentro del canvas
       if (!this.animationPaused && p.mouseX > 0 && p.mouseX < p.width && p.mouseY > 0 && p.mouseY < p.height) {
-        if (p.frameCount % 2 === 0) {
+        if (p.frameCount % 2 === 0) { // Limita la tasa de generación de pétalos (cada 2 frames)
           this.generateMousePetal(p);
         }
       }
     };
 
-    p.touchMoved = () => { // Para dispositivos móviles
+    p.touchMoved = () => { // Para dispositivos móviles (detecta el arrastre del dedo)
+      // Solo genera pétalos si la animación NO está pausada y hay al menos un toque
       if (!this.animationPaused && p.touches.length > 0) {
-        p.mouseX = (p.touches[0] as any).x; // P5.js actualiza mouseX/Y con el primer toque
+        p.mouseX = (p.touches[0] as any).x; // P5.js actualiza mouseX/Y con la posición del primer toque
         p.mouseY = (p.touches[0] as any).y;
         if (p.frameCount % 2 === 0) {
           this.generateMousePetal(p);
         }
       }
-      return false; // Previene el scroll por defecto en móvil
+      return false; // Importante: Previene el scroll por defecto en móvil al arrastrar
     };
 
-    p.windowResized = () => {
+    p.windowResized = () => { // Se llama al redimensionar la ventana o rotar el dispositivo
       p.resizeCanvas(p.windowWidth * 0.8, p.windowHeight * 0.8);
-      this.checkOrientation(p); // Re-chequea la orientación al redimensionar/rotar
+      this.checkOrientation(p); // Re-chequea la orientación y el estado de pausa
     };
 
-    p.touchStarted = () => { // Para iniciar la animación al primer toque
+    // Eventos para detectar la primera interacción del usuario y despausar la animación
+    p.touchStarted = () => { // Para iniciar la animación al primer toque en móvil
       if (this.animationPaused) {
-        this.hasInteracted = true;
-        this.checkOrientation(p); // Re-chequea la orientación
+        this.hasInteracted = true; // Marca que el usuario ya interactuó
+        this.checkOrientation(p); // Re-chequea la orientación y despausa si es posible
       }
-      return false; // Previene el zoom por defecto
+      return false; // Importante: Previene el zoom por defecto al tocar en móvil
     };
 
-    p.mousePressed = () => { // Para iniciar la animación al primer click del ratón
+    p.mousePressed = () => { // Para iniciar la animación al primer click del ratón en escritorio
       if (this.animationPaused) {
-        this.hasInteracted = true;
-        this.checkOrientation(p); // Re-chequea la orientación
+        this.hasInteracted = true; // Marca que el usuario ya interactuó
+        this.checkOrientation(p); // Re-chequea la orientación y despausa si es posible
       }
     };
     // --- FIN Eventos ---
   }
 
-  // --- NUEVAS FUNCIONES PARA LA PANTALLA DE ORIENTACIÓN/CARGA ---
+  // --- FUNCIONES PARA LA PANTALLA DE ORIENTACIÓN/CARGA ---
   private checkOrientation(p: p5): void {
-      if (this.isMobile && p.width < p.height) { // Si es móvil y está en modo vertical (portrait)
+      // Si es móvil y está en modo vertical (portrait)
+      if (this.isMobile && p.width < p.height) {
           this.showOrientationMessage = true;
-          this.animationPaused = true;
-      } else { // Si es horizontal o no es móvil
-          this.showOrientationMessage = false;
-          if (this.hasInteracted || !this.isMobile) { // Si ya interactuó o no es móvil, despausa
+          this.animationPaused = true; // La animación permanece pausada
+      } else { // Si está en horizontal o no es un dispositivo móvil
+          this.showOrientationMessage = false; // No mostrar mensaje de orientación
+          // Si el usuario ya interactuó O no es un dispositivo móvil, despausa la animación
+          if (this.hasInteracted || !this.isMobile) {
               this.animationPaused = false;
-          } else { // Si es móvil, está horizontal pero no ha interactuado
+          } else { // Si es móvil, está horizontal, pero aún no ha habido interacción
               this.animationPaused = true; // Sigue pausada esperando el toque
           }
       }
   }
 
   private drawOverlayMessage(p: p5): void {
-      p.fill(210, 180, 230, 220); // Fondo semi-transparente
+      p.fill(210, 180, 230, 220); // Fondo semi-transparente del color del lienzo
       p.rect(0, 0, p.width, p.height);
 
       p.textAlign(p.CENTER, p.CENTER);
-      p.fill(50, 50, 50);
+      p.fill(50, 50, 50); // Color de texto
 
-      if (this.showOrientationMessage) {
+      if (this.showOrientationMessage) { // Mensaje para girar el celular
           p.textSize(p.width * 0.05);
           p.text("Por favor, gira tu celular\na horizontal para una mejor experiencia", p.width / 2, p.height / 2 - p.width * 0.08);
           p.textSize(p.width * 0.03);
           p.text("(Y toca la pantalla para iniciar)", p.width / 2, p.height / 2 + p.width * 0.02);
-      } else if (this.isMobile && !this.hasInteracted) {
+      } else if (this.isMobile && !this.hasInteracted) { // Mensaje para tocar la pantalla en horizontal (móvil)
           p.textSize(p.width * 0.05);
           p.text("Toca la pantalla para comenzar", p.width / 2, p.height / 2);
       } else {
-          // Esto no debería ocurrir si animationPaused es true y showOrientationMessage es false
-          // Podría ser un mensaje de "Cargando..." si tuviéramos assets pesados.
+          // Esto no debería ejecutarse con la lógica actual si animationPaused es true
+          // Pero podría usarse para un mensaje de "Cargando..."
           p.textSize(p.width * 0.04);
           p.text("Preparando la magia...", p.width / 2, p.height / 2);
       }
   }
-  // --- FIN NUEVAS FUNCIONES ---
+  // --- FIN FUNCIONES DE LA PANTALLA DE ORIENTACIÓN/CARGA ---
 
 
   private generateMousePetal(p: p5): void {
@@ -237,8 +249,8 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     const rotationSpeed = p.random(-0.1, 0.1);
     const scale = p.random(0.5, 1.0);
 
-    const initialLife = p.random(60, 120);
-    const alpha = 255;
+    const initialLife = p.random(60, 120); // Pétalos viven entre 1 y 2 segundos
+    const alpha = 255; // Empiezan completamente opacos
 
     this.petals.push({
       type,
@@ -255,17 +267,19 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Dibuja un solo pétalo de margarita
   private drawDaisyPetal(p: p5, size: number, r: number, g: number, b: number, alpha: number): void {
     p.noStroke();
     p.fill(r, g, b, alpha);
     p.ellipse(0, size * 0.3, size * 0.25, size * 0.8);
   }
 
-    private drawRosePetal(p: p5, size: number, r: number, g: number, b: number, alpha: number): void {
-        p.noStroke();
-        p.fill(r, g, b, alpha);
-        p.ellipse(0, size * 0.1, size * 0.12, size * 0.22);
-    }
+  // Dibuja un solo pétalo de rosa
+  private drawRosePetal(p: p5, size: number, r: number, g: number, b: number, alpha: number): void {
+    p.noStroke();
+    p.fill(r, g, b, alpha);
+    p.ellipse(0, size * 0.1, size * 0.12, size * 0.22);
+  }
 
   private generateRandomFlower(p: p5): void {
     const type = p.random() > 0.4 ? 'rose' : 'daisy';
@@ -310,7 +324,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     if (type === 'daisy') {
       size = p.random(30, 70);
       color = { r: 255, g: 255, b: 255 };
-    } else {
+    } else { // Rose
       size = p.random(70, 150);
       const roseColors = [
         { r: 255, g: 100, b: 150 },
@@ -323,6 +337,16 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
       color = p.random(roseColors);
     }
 
+    // --- NUEVO: Ajusta el tamaño de la flor según si es móvil ---
+    let sizeMultiplier = 1.0;
+    // Si el ancho del canvas es pequeño (asumiendo modo horizontal para móvil)
+    // O si nuestra heurística detecta que es móvil
+    if (p.width < 768 || this.isMobile) {
+        sizeMultiplier = 0.6; // Reduce el tamaño a 60% para móviles
+    }
+    size *= sizeMultiplier;
+    // --- FIN NUEVO ---
+
     const rotation = p.random(0, 360);
     const rotationSpeed = p.random(-0.05, 0.05);
 
@@ -332,6 +356,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Dibuja una margarita completa (ya teníamos esta)
   private drawDaisy(p: p5, size: number, r: number, g: number, b: number): void {
     p.noStroke();
     p.fill(r, g, b, 200);
@@ -347,6 +372,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     p.ellipse(0, 0, size * 0.25, size * 0.25);
   }
 
+  // Dibuja una rosa completa (ya teníamos esta)
   private drawRose(p: p5, size: number, r: number, g: number, b: number): void {
     p.noStroke();
     let baseColor = p.color(r, g, b);
@@ -368,6 +394,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     p.ellipse(0, 0, size * 0.05, size * 0.05);
   }
 
+  // Dibuja los mensajes
   private drawMessage(p: p5): void {
     p.textAlign(p.CENTER, p.CENTER);
     p.textSize(p.width * 0.04);
@@ -377,6 +404,7 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     let textAlpha = p.map(this.currentFrame, this.messageDelay, this.messageDelay + 120, 0, 255, true);
     p.fill(50, 50, 50, textAlpha);
 
+    // Mensaje principal
     p.push();
     p.fill(0, 0, 0, textAlpha * 0.3);
     p.text("¡Te amo!", p.width / 2 + 2, p.height / 2 + 2 - (p.width * 0.04));
@@ -384,14 +412,17 @@ export class FlowerCanvasComponent implements OnInit, OnDestroy {
     p.fill(50, 50, 50, textAlpha);
     p.text("¡Te amo!", p.width / 2, p.height / 2 - (p.width * 0.04));
 
+    // Segundo mensaje
     p.textSize(p.width * 0.03);
     p.fill(70, 70, 70, textAlpha);
     p.text("¡Cada flor es un pedacito de mi corazón para ti!", p.width / 2, p.height / 2 + (p.width * 0.01));
 
+    // Mensaje interactivo
     p.textSize(p.width * 0.02);
     p.fill(100, 100, 100, textAlpha * 0.8);
     p.text("Mueve el dedo o ratón para ver la magia...", p.width / 2, p.height / 2 + (p.width * 0.01) + (p.width * 0.05));
 
+    // Mensaje final
     p.textSize(p.width * 0.02);
     p.fill(100, 100, 100, textAlpha * 0.8);
     p.text("Para mi SpaceCowgirl;)", p.width / 2, p.height / 6 + (p.width * 0.01) + (p.width * 0.05));
